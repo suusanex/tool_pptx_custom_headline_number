@@ -114,6 +114,24 @@ public class PrefixReplacerTests
         });
     }
 
+    [Test]
+    public void Replace_InsertsAfterParagraphPropertiesWhenPPrExists()
+    {
+        // a:pPr が存在する空段落で insertWhenPrefixMissing=true のとき、Run が a:pPr の後ろに挿入される
+        var paragraph = new A.Paragraph(new A.ParagraphProperties { Level = 1 });
+        var regex = new Regex("^\\d+[.)](?:[\\s\\u3000]+)?", RegexOptions.CultureInvariant);
+
+        var changed = new PrefixReplacer().Replace(paragraph, regex, "1.", " ", true);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(changed, Is.True);
+            Assert.That(GetText(paragraph), Is.EqualTo("1. "));
+            Assert.That(paragraph.GetFirstChild<A.ParagraphProperties>(), Is.Not.Null);
+            Assert.That(paragraph.GetFirstChild<A.ParagraphProperties>()!.NextSibling<A.Run>(), Is.Not.Null);
+        });
+    }
+
     private static A.Paragraph CreateParagraph(IEnumerable<string> runs)
     {
         var paragraph = new A.Paragraph();

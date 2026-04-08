@@ -27,7 +27,15 @@ public sealed class PrefixReplacer
 
             var run = new A.Run();
             run.Append(new A.Text(newPrefix + separator));
-            paragraph.PrependChild(run);
+            var pPr = paragraph.GetFirstChild<A.ParagraphProperties>();
+            if (pPr is not null)
+            {
+                pPr.InsertAfterSelf(run);
+            }
+            else
+            {
+                paragraph.PrependChild(run);
+            }
             return true;
         }
 

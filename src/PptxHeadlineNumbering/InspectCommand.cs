@@ -28,7 +28,7 @@ public sealed class InspectCommand
             foreach (var paragraph in paragraphs)
             {
                 _output.WriteLine(
-                    $"{paragraph.SlideIndex}\t{Sanitize(paragraph.ShapeName)}\t{FormatPlaceholderType(paragraph.PlaceholderType)}\t{paragraph.ParagraphLevel}\t{Sanitize(paragraph.CurrentText)}");
+                    $"{paragraph.SlideIndex}\t{Sanitize(paragraph.ShapeName)}\t{NumberingRule.ToPlaceholderToken(paragraph.PlaceholderType) ?? string.Empty}\t{paragraph.ParagraphLevel}\t{Sanitize(paragraph.CurrentText)}");
             }
         }
         catch (Exception ex)
@@ -36,36 +36,6 @@ public sealed class InspectCommand
             Trace.WriteLine(ex.ToString());
             throw;
         }
-    }
-
-    private static string FormatPlaceholderType(DocumentFormat.OpenXml.Presentation.PlaceholderValues? placeholderType)
-    {
-        if (placeholderType is null)
-        {
-            return string.Empty;
-        }
-
-        if (placeholderType.Value == DocumentFormat.OpenXml.Presentation.PlaceholderValues.Title)
-        {
-            return "title";
-        }
-
-        if (placeholderType.Value == DocumentFormat.OpenXml.Presentation.PlaceholderValues.CenteredTitle)
-        {
-            return "ctrTitle";
-        }
-
-        if (placeholderType.Value == DocumentFormat.OpenXml.Presentation.PlaceholderValues.Body)
-        {
-            return "body";
-        }
-
-        if (placeholderType.Value == DocumentFormat.OpenXml.Presentation.PlaceholderValues.Object)
-        {
-            return "obj";
-        }
-
-        return placeholderType.Value.ToString();
     }
 
     private static string Sanitize(string value)

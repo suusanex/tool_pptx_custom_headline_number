@@ -124,7 +124,7 @@ public sealed class NumberingRule
         }
     }
 
-    private static string? ToPlaceholderToken(P.PlaceholderValues? placeholderType)
+    internal static string? ToPlaceholderToken(P.PlaceholderValues? placeholderType)
     {
         if (placeholderType is null)
         {
