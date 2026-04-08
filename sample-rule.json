@@ -1,0 +1,49 @@
+{
+  "prefixRegex": "^(?:\\d+(?:\\.\\d+)*[.)]?)(?:[\\s\\u3000]+)?",
+  "separator": " ",
+  "insertWhenPrefixMissing": true,
+  "excludedSlideRanges": [
+    {
+      "startSlideNumber": 1,
+      "endSlideNumber": 2
+    },
+    {
+      "startSlideNumber": 15,
+      "endSlideNumber": 18
+    }
+  ],
+  "levels": [
+    {
+      "name": "H1",
+      "match": {
+        "placeholderTypes": ["title", "ctrTitle"]
+      },
+      "format": "{H1}.",
+      "resetsOnNewLevel": []
+    },
+    {
+      "name": "H2",
+      "matches": [
+        {
+          "placeholderTypes": ["body", "obj"],
+          "paragraphLevel": 0
+        },
+        {
+          "shapeNames": ["Content Placeholder 2", "コンテンツ プレースホルダー 2"],
+          "paragraphLevel": 0
+        }
+      ],
+      "format": "{H1}.{H2}",
+      "resetsOnNewLevel": ["H1"]
+    },
+    {
+      "name": "H3",
+      "match": {
+        "placeholderTypes": ["body", "obj"],
+        "paragraphLevel": 1
+      },
+      "format": "{H3})",
+      "resetsOnNewLevel": ["H1", "H2"]
+    }
+  ]
+}
