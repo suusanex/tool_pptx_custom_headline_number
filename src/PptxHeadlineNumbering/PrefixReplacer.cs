@@ -25,6 +25,11 @@ public sealed class PrefixReplacer
                 return false;
             }
 
+            if (newPrefix.Length == 0)
+            {
+                return false;
+            }
+
             var run = new A.Run();
             run.Append(new A.Text(newPrefix + separator));
             var pPr = paragraph.GetFirstChild<A.ParagraphProperties>();
@@ -41,19 +46,23 @@ public sealed class PrefixReplacer
 
         var original = string.Concat(textNodes.Select(textNode => textNode.Text));
         var match = prefixRegex.Match(original);
-        var removeLength = 0;
-        if (match.Success && match.Index == 0)
+        var hasPrefix = match.Success && match.Index == 0;
+        var removeLength = hasPrefix ? match.Length : 0;
+        if (!hasPrefix)
         {
-            removeLength = match.Length;
-        }
-        else if (!insertWhenPrefixMissing)
-        {
-            return false;
+            if (!insertWhenPrefixMissing || newPrefix.Length == 0)
+            {
+                return false;
+            }
         }
 
         RemoveLeadingCharacters(textNodes, removeLength);
-        var firstTextNode = textNodes[0];
-        firstTextNode.Text = newPrefix + separator + firstTextNode.Text;
+        if (newPrefix.Length > 0)
+        {
+            var firstTextNode = textNodes[0];
+            firstTextNode.Text = newPrefix + separator + firstTextNode.Text;
+        }
+
         return true;
     }
 

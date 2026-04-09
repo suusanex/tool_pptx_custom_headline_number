@@ -1,0 +1,8 @@
+プレフィックス削除時に区切り文字が残らないよう修正
+
+概要:
+- NumberingRule の Validate を緩め、format が空の場合の扱いを調整
+- PrefixReplacer を newPrefix が空のとき separator を追加しないよう修正
+- テストとドキュメント（README、plans）を更新
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

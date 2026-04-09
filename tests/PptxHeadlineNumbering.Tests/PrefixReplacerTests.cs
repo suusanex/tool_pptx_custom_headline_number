@@ -69,6 +69,80 @@ public class PrefixReplacerTests
     }
 
     [Test]
+    public void Replace_RemovesPrefixWithoutInserting_WhenNewPrefixIsEmpty()
+    {
+        var paragraph = CreateParagraph(["1. Intro"]);
+
+        var changed = new PrefixReplacer().Replace(paragraph, NumberPrefixRegex, string.Empty, " ", true);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(changed, Is.True);
+            Assert.That(GetText(paragraph), Is.EqualTo("Intro"));
+        });
+    }
+
+    [Test]
+    public void Replace_MultipleRuns_RemovesPrefixOnlyWhenNewPrefixIsEmpty()
+    {
+        var paragraph = CreateParagraph(["1", ". ", "Intro"]);
+
+        var changed = new PrefixReplacer().Replace(paragraph, NumberPrefixRegex, string.Empty, " ", true);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(changed, Is.True);
+            Assert.That(GetText(paragraph), Is.EqualTo("Intro"));
+        });
+    }
+
+    [Test]
+    public void Replace_DoesNothingForEmptyParagraph_WhenNewPrefixIsEmptyAndInsertEnabled()
+    {
+        var paragraph = new A.Paragraph();
+        var regex = new Regex("^\\d+[.)](?:[\\s\\u3000]+)?", RegexOptions.CultureInvariant);
+
+        var changed = new PrefixReplacer().Replace(paragraph, regex, string.Empty, " ", true);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(changed, Is.False);
+            Assert.That(paragraph.Descendants<A.Text>().Any(), Is.False);
+        });
+    }
+
+    [Test]
+    public void UT_IT_040__Replace_RemovesPrefixOnlyWhenNewPrefixIsEmpty()
+    {
+        // format:"" のとき、既存プレフィックスのみ除去し separator は挿入しない（TP-040 prefix 削除分岐）
+        var paragraph = CreateParagraph(["1. はじめに"]);
+
+        var changed = new PrefixReplacer().Replace(paragraph, NumberPrefixRegex, string.Empty, " ", true);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(changed, Is.True);
+            Assert.That(GetText(paragraph), Is.EqualTo("はじめに")); // prefix と後続スペースが除去され本文のみ残る
+        });
+    }
+
+    [Test]
+    public void UT_IT_040__Replace_DoesNothingWhenPrefixMissingAndNewPrefixIsEmptyEvenIfInsertEnabled()
+    {
+        // prefix 未検出かつ newPrefix="" の場合、insertWhenPrefixMissing=true でも何も挿入しない
+        var paragraph = CreateParagraph(["Intro"]);
+        var regex = new Regex("^\\d+[.)](?:[\\s\\u3000]+)?", RegexOptions.CultureInvariant);
+
+        var changed = new PrefixReplacer().Replace(paragraph, regex, string.Empty, " ", true);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(changed, Is.False);
+            Assert.That(GetText(paragraph), Is.EqualTo("Intro"));
+        });
+    }
+
+    [Test]
     public void Replace_SupportsFullWidthSeparator()
     {
         var paragraph = CreateParagraph(["1.　Intro"]);

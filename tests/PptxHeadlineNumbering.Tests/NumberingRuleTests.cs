@@ -120,12 +120,110 @@ public class NumberingRuleTests
     public void UT_IT_080__LoadFromFile_ThrowsWhenFormatMissing()
     {
         var path = Path.Combine(TestContext.CurrentContext.WorkDirectory, $"{Guid.NewGuid():N}.json");
-        // "format" フィールドが省略されたとき、デフォルト "" で Validate が InvalidDataException をスローする
+        // "format" フィールドが省略されたとき、Validate が InvalidDataException をスローする
         File.WriteAllText(
             path,
             """
             {
               "levels":[{"name":"H1","match":{"placeholderTypes":["title"]},"resetsOnNewLevel":[]}]
+            }
+            """);
+
+        try
+        {
+            Assert.Throws<InvalidDataException>(() => NumberingRule.LoadFromFile(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Test]
+    public void UT_IT_080__LoadFromFile_AllowsExplicitEmptyFormat()
+    {
+        // format:"" は prefix 削除の明示的指定として有効であり、Validate を通過する（TP-080）
+        var path = Path.Combine(TestContext.CurrentContext.WorkDirectory, $"{Guid.NewGuid():N}.json");
+        File.WriteAllText(
+            path,
+            """
+            {
+              "prefixRegex":"^(?:\\d+(?:\\.\\d+)*[.)]?)(?:[\\s\\u3000]+)?",
+              "levels":[{"name":"H1","match":{"placeholderTypes":["title"]},"format":"","resetsOnNewLevel":[]}]
+            }
+            """);
+
+        try
+        {
+            var rule = NumberingRule.LoadFromFile(path);
+            Assert.That(rule.Levels[0].Format, Is.EqualTo(string.Empty));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [TestCase(" ")]
+    [TestCase("\u3000")]
+    public void UT_IT_080__LoadFromFile_ThrowsForWhitespaceOnlyFormat(string format)
+    {
+        // format に空白のみを指定した場合は曖昧な設定として拒否される（TP-080）
+        var path = Path.Combine(TestContext.CurrentContext.WorkDirectory, $"{Guid.NewGuid():N}.json");
+        File.WriteAllText(
+            path,
+            $$"""
+            {
+              "prefixRegex":"^(?:\\d+(?:\\.\\d+)*[.)]?)(?:[\\s\\u3000]+)?",
+              "levels":[{"name":"H1","match":{"placeholderTypes":["title"]},"format":"{{format}}","resetsOnNewLevel":[]}]
+            }
+            """);
+
+        try
+        {
+            Assert.Throws<InvalidDataException>(() => NumberingRule.LoadFromFile(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Test]
+    public void LoadFromFile_AllowsExplicitEmptyFormat()
+    {
+        var path = Path.Combine(TestContext.CurrentContext.WorkDirectory, $"{Guid.NewGuid():N}.json");
+        File.WriteAllText(
+            path,
+            """
+            {
+              "prefixRegex":"^(?:\\d+(?:\\.\\d+)*[.)]?)(?:[\\s\\u3000]+)?",
+              "levels":[{"name":"H1","match":{"placeholderTypes":["title"]},"format":"","resetsOnNewLevel":[]}]
+            }
+            """);
+
+        try
+        {
+            var rule = NumberingRule.LoadFromFile(path);
+            Assert.That(rule.Levels[0].Format, Is.EqualTo(string.Empty));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [TestCase(" ")]
+    [TestCase("\u3000")]
+    public void LoadFromFile_ThrowsWhenFormatIsWhitespaceOnly(string format)
+    {
+        var path = Path.Combine(TestContext.CurrentContext.WorkDirectory, $"{Guid.NewGuid():N}.json");
+        File.WriteAllText(
+            path,
+            $$"""
+            {
+              "prefixRegex":"^(?:\\d+(?:\\.\\d+)*[.)]?)(?:[\\s\\u3000]+)?",
+              "levels":[{"name":"H1","match":{"placeholderTypes":["title"]},"format":"{{format}}","resetsOnNewLevel":[]}]
             }
             """);
 
