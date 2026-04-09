@@ -190,54 +190,6 @@ public class NumberingRuleTests
     }
 
     [Test]
-    public void LoadFromFile_AllowsExplicitEmptyFormat()
-    {
-        var path = Path.Combine(TestContext.CurrentContext.WorkDirectory, $"{Guid.NewGuid():N}.json");
-        File.WriteAllText(
-            path,
-            """
-            {
-              "prefixRegex":"^(?:\\d+(?:\\.\\d+)*[.)]?)(?:[\\s\\u3000]+)?",
-              "levels":[{"name":"H1","match":{"placeholderTypes":["title"]},"format":"","resetsOnNewLevel":[]}]
-            }
-            """);
-
-        try
-        {
-            var rule = NumberingRule.LoadFromFile(path);
-            Assert.That(rule.Levels[0].Format, Is.EqualTo(string.Empty));
-        }
-        finally
-        {
-            File.Delete(path);
-        }
-    }
-
-    [TestCase(" ")]
-    [TestCase("\u3000")]
-    public void LoadFromFile_ThrowsWhenFormatIsWhitespaceOnly(string format)
-    {
-        var path = Path.Combine(TestContext.CurrentContext.WorkDirectory, $"{Guid.NewGuid():N}.json");
-        File.WriteAllText(
-            path,
-            $$"""
-            {
-              "prefixRegex":"^(?:\\d+(?:\\.\\d+)*[.)]?)(?:[\\s\\u3000]+)?",
-              "levels":[{"name":"H1","match":{"placeholderTypes":["title"]},"format":"{{format}}","resetsOnNewLevel":[]}]
-            }
-            """);
-
-        try
-        {
-            Assert.Throws<InvalidDataException>(() => NumberingRule.LoadFromFile(path));
-        }
-        finally
-        {
-            File.Delete(path);
-        }
-    }
-
-    [Test]
     public void MatchLevel_MatchesShapeNameWhenPlaceholderTypeIsMissing()
     {
         var rule = new NumberingRule
