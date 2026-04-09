@@ -60,7 +60,15 @@ public sealed class ApplyCommand
                     }
 
                     counter.Increment(level.Name);
-                    var formattedPrefix = counter.Format(level.Format);
+                    var format = level.Format
+                        ?? throw new InvalidDataException(
+                            string.Format(
+                                System.Globalization.CultureInfo.InvariantCulture,
+                                "format is required for level: {0}",
+                                level.Name));
+                    var formattedPrefix = format.Length == 0
+                        ? string.Empty
+                        : counter.Format(format);
                     _prefixReplacer.Replace(
                         paragraph.ParagraphElement,
                         prefixRegex,

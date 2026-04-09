@@ -30,9 +30,12 @@ dotnet run --project src\PptxHeadlineNumbering -- apply <input.pptx> <output.ppt
 - `insertWhenPrefixMissing`: プレフィックス未検出時に先頭挿入するか
 - `excludedSlideRanges`: apply 対象外にするスライド範囲（`startSlideNumber` / `endSlideNumber`、1-based、両端含む）
 - `levels`: 見出しレベル定義（`match` または `matches`, `format`, `resetsOnNewLevel`）
+- `levels[].format`: 空文字列 (`""`) を指定すると、対象段落は既存 prefix の除去のみを行います（未指定は不正、空白のみも不正）
 - `match.placeholderTypes`: `title` / `ctrTitle` / `body` / `obj` で対象を絞る
 - `match.shapeNames`: `inspect` の `ShapeName` を使って対象を絞る
 - `matches`: 複数の `match` 条件を OR で並べる
+
+prefix 削除時に区切り文字（空白/全角空白など）まで消したい場合は、`prefixRegex` がその区切り文字まで先頭一致するように指定してください。削除範囲は `prefixRegex` の先頭一致部分です。
 
 ## テスト
 

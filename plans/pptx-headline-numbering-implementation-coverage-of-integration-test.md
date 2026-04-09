@@ -3,6 +3,7 @@
 > 元テスト観点: `plans/pptx-headline-numbering-integration-test-points.md`
 > 対象実装: `src/PptxHeadlineNumbering/`
 > 生成日: 2026-04
+> フォローアップ追記: prefix 削除機能（`format:""`）対応テスト追加分を反映（`plans/pptx-headline-numbering-prefix-removal.md` 参照）
 
 ---
 
@@ -35,8 +36,8 @@
 | 項目 | 内容 |
 |---|---|
 | **状態** | Automated |
-| **対応テスト** | `ApplyCommandTests.Execute_AppliesNumberingAcrossSlides_AndIsIdempotent`<br>`ApplyCommandTests.UT_IT_020__Execute_AppliesFullWidthSeparator`<br>`ApplyCommandTests.UT_IT_020__Execute_NumbersObjPlaceholderAndSkipsFreeShape` |
-| **理由** | 複数スライドにまたがる H1/H2/H3 連番・separator 動作を `Execute_AppliesNumberingAcrossSlides_AndIsIdempotent` で検証。全角スペース separator は `UT_IT_020__Execute_AppliesFullWidthSeparator` で確認。obj プレースホルダーの番号付与と自由配置図形のスキップは `UT_IT_020__Execute_NumbersObjPlaceholderAndSkipsFreeShape` で確認。実装は `ApplyCommand.cs` / `NumberingRule.cs` が存在し本物の実装を使用。 |
+| **対応テスト** | `ApplyCommandTests.Execute_AppliesNumberingAcrossSlides_AndIsIdempotent`<br>`ApplyCommandTests.UT_IT_020__Execute_AppliesFullWidthSeparator`<br>`ApplyCommandTests.UT_IT_020__Execute_NumbersObjPlaceholderAndSkipsFreeShape`<br>`ApplyCommandTests.UT_IT_020__Execute_RemovesPrefixFromCenteredTitleWhenFormatIsEmpty`<br>`ApplyCommandTests.Execute_RemovesPrefixWhenFormatIsEmpty`<br>`ApplyCommandTests.Execute_PreservesHierarchyWhenDeletionAndNumberingAreMixed` |
+| **理由** | 複数スライドにまたがる H1/H2/H3 連番・separator 動作を `Execute_AppliesNumberingAcrossSlides_AndIsIdempotent` で検証。全角スペース separator は `UT_IT_020__Execute_AppliesFullWidthSeparator` で確認。obj プレースホルダーの番号付与と自由配置図形のスキップは `UT_IT_020__Execute_NumbersObjPlaceholderAndSkipsFreeShape` で確認。さらに `UT_IT_020__Execute_RemovesPrefixFromCenteredTitleWhenFormatIsEmpty` により `ctrTitle` 対象も apply 経路で検証し、`Execute_RemovesPrefixWhenFormatIsEmpty` / `Execute_PreservesHierarchyWhenDeletionAndNumberingAreMixed` により同じ apply コマンドの削除モードでも対象レベル判定と階層維持が崩れないことを確認した。実装は `ApplyCommand.cs` / `NumberingRule.cs` / `PrefixReplacer.cs` が存在し本物の実装を使用。 |
 
 ---
 
@@ -55,8 +56,8 @@
 | 項目 | 内容 |
 |---|---|
 | **状態** | Automated |
-| **対応テスト** | `PrefixReplacerTests.Replace_ReplacesPrefixInSingleRun`<br>`PrefixReplacerTests.Replace_ReplacesPrefixAcrossMultipleRuns`<br>`PrefixReplacerTests.Replace_InsertsPrefixWhenMissing_IfConfigured`<br>`PrefixReplacerTests.Replace_DoesNothingWhenMissingAndInsertionDisabled`<br>`PrefixReplacerTests.Replace_SupportsFullWidthSeparator`<br>`PrefixReplacerTests.UT_IT_040__Replace_InsertsIntoEmptyParagraphWhenEnabled`<br>`PrefixReplacerTests.UT_IT_040__Replace_DoesNothingForEmptyParagraphWhenDisabled` |
-| **理由** | 単一 Run / 複数 Run / insertWhenPrefixMissing=true/false / 全角セパレータの各ケースを既存テストで検証済み。テキストノードが 0 件（空段落）の分岐は `UT_IT_040__*` で追加確認。RunProperties 継承は `Replace_ReplacesPrefixAcrossMultipleRuns` で `RunProperties.Language` を確認済み。実装は `PrefixReplacer.cs` が本物の実装として存在。 |
+| **対応テスト** | `PrefixReplacerTests.Replace_ReplacesPrefixInSingleRun`<br>`PrefixReplacerTests.Replace_ReplacesPrefixAcrossMultipleRuns`<br>`PrefixReplacerTests.Replace_InsertsPrefixWhenMissing_IfConfigured`<br>`PrefixReplacerTests.Replace_DoesNothingWhenMissingAndInsertionDisabled`<br>`PrefixReplacerTests.Replace_SupportsFullWidthSeparator`<br>`PrefixReplacerTests.Replace_RemovesPrefixWithoutInserting_WhenNewPrefixIsEmpty`<br>`PrefixReplacerTests.Replace_MultipleRuns_RemovesPrefixOnlyWhenNewPrefixIsEmpty`<br>`PrefixReplacerTests.Replace_DoesNothingForEmptyParagraph_WhenNewPrefixIsEmptyAndInsertEnabled`<br>`PrefixReplacerTests.UT_IT_040__Replace_RemovesPrefixOnlyWhenNewPrefixIsEmpty`<br>`PrefixReplacerTests.UT_IT_040__Replace_DoesNothingWhenPrefixMissingAndNewPrefixIsEmptyEvenIfInsertEnabled`<br>`PrefixReplacerTests.UT_IT_040__Replace_InsertsIntoEmptyParagraphWhenEnabled`<br>`PrefixReplacerTests.UT_IT_040__Replace_DoesNothingForEmptyParagraphWhenDisabled` |
+| **理由** | 単一 Run / 複数 Run / insertWhenPrefixMissing=true/false / 全角セパレータの各ケースを既存テストで検証済み。テキストノードが 0 件（空段落）の分岐は `UT_IT_040__*` で追加確認。prefix 削除モードについて、`UT_IT_040__Replace_RemovesPrefixOnlyWhenNewPrefixIsEmpty` で既存 prefix の除去・separator 非挿入、`UT_IT_040__Replace_DoesNothingWhenPrefixMissingAndNewPrefixIsEmptyEvenIfInsertEnabled` で prefix 未検出時 no-op を明示的に確認。RunProperties 継承は `Replace_ReplacesPrefixAcrossMultipleRuns` で `RunProperties.Language` を確認済み。実装は `PrefixReplacer.cs` が本物の実装として存在。 |
 
 ---
 
@@ -65,8 +66,8 @@
 | 項目 | 内容 |
 |---|---|
 | **状態** | Automated |
-| **対応テスト** | `ApplyCommandTests.Execute_AppliesNumberingAcrossSlides_AndIsIdempotent` |
-| **理由** | output1.pptx と output2.pptx（output1 を入力として再適用）の全段落テキストが完全一致することを検証済み。2回分の冪等性が証明できれば N 回も同様なため、3回連続は本テストで実質カバーされる（TP-100 の3回連続も同一）。本物の実装（`ApplyCommand` + `PrefixReplacer` + `HeadingCounter`）を使用。 |
+| **対応テスト** | `ApplyCommandTests.Execute_AppliesNumberingAcrossSlides_AndIsIdempotent`<br>`ApplyCommandTests.Execute_IsIdempotent_WhenFormatIsEmpty`<br>`ApplyCommandTests.UT_IT_050__Execute_IsIdempotent_AfterPrefixRemoval`<br>`ApplyCommandTests.UT_IT_100__Execute_RemainsStableAcrossThreeRuns` |
+| **理由** | 通常の番号付与については output1.pptx と output2.pptx（output1 を入力として再適用）の全段落テキストが完全一致することを検証済み。さらに prefix 削除モードでも `Execute_IsIdempotent_WhenFormatIsEmpty` で再適用結果が不変であることを確認し、`UT_IT_050__Execute_IsIdempotent_AfterPrefixRemoval` では H1 削除 + H2 通常採番の混在ルールで 2 回適用後も結果が不変（H2 が `1.1`, `2.1` のまま）であることを明示的に検証した。3回連続実行は `UT_IT_100__Execute_RemainsStableAcrossThreeRuns` で直接検証した。本物の実装（`ApplyCommand` + `PrefixReplacer` + `HeadingCounter`）を使用。 |
 
 ---
 
@@ -75,8 +76,8 @@
 | 項目 | 内容 |
 |---|---|
 | **状態** | Automated |
-| **対応テスト** | `CliApplicationTests.Run_ReturnsErrorForMissingInputFile`（inspect 不存在ファイル → exit 1）<br>`InspectCommandTests.UT_IT_060__Execute_TracesExceptionOnFileNotFound`（trace ログ確認）<br>`ApplyCommandTests.UT_IT_060__Execute_ThrowsForNonexistentRuleFile`（rule ファイル不存在 → 例外）<br>`CliApplicationTests.UT_IT_060__Run_ReturnsErrorWhenApplyInputNotFound`（apply 不存在入力 → exit 1）<br>`CliApplicationTests.UT_IT_060__Run_ReturnsErrorForCorruptPptxFile`（壊れた ZIP → exit 1）<br>`ApplyCommandTests.Execute_ThrowsWhenInputAndOutputAreSame_AndWritesTrace`（trace ログ確認） |
-| **理由** | ファイル不存在（inspect/apply 入力・rule）→ 例外発生・exit 1・trace ログ出力をそれぞれ確認。壊れた .pptx（非 ZIP バイト列）も exit 1 を確認。stderr への出力は CliApplicationTests.Run_ReturnsErrorForMissingInputFile で exit 1 と確認（stderr 内容は Run_Returns... で検証）。実装は `InspectCommand.cs` / `ApplyCommand.cs` に catch ブロックが存在。 |
+| **対応テスト** | `CliApplicationTests.Run_ReturnsErrorForMissingInputFile`（inspect 不存在ファイル → exit 1）<br>`InspectCommandTests.UT_IT_060__Execute_TracesExceptionOnFileNotFound`（trace ログ確認）<br>`ApplyCommandTests.UT_IT_060__Execute_ThrowsForNonexistentRuleFile`（rule ファイル不存在 → 例外）<br>`CliApplicationTests.UT_IT_060__Run_ReturnsErrorWhenApplyInputNotFound`（apply 不存在入力 → exit 1）<br>`CliApplicationTests.UT_IT_060__Run_ReturnsErrorForCorruptPptxFile`（壊れた ZIP → exit 1） |
+| **理由** | ファイル不存在（inspect/apply 入力・rule）→ 例外発生・exit 1・trace ログ出力をそれぞれ確認。壊れた .pptx（非 ZIP バイト列）も exit 1 を確認。stderr への出力は `CliApplicationTests.Run_ReturnsErrorForMissingInputFile` と `UT_IT_060__Run_ReturnsErrorWhenApplyInputNotFound` で確認済み。実装は `InspectCommand.cs` / `ApplyCommand.cs` に catch ブロックが存在し、`Exception.ToString()` を trace 出力している。 |
 
 ---
 
@@ -95,8 +96,8 @@
 | 項目 | 内容 |
 |---|---|
 | **状態** | Automated |
-| **対応テスト** | `NumberingRuleTests.LoadFromFile_ThrowsForBrokenJson`（JSON 構文エラー → JsonException）<br>`NumberingRuleTests.UT_IT_080__LoadFromFile_ThrowsForEmptyFile`（空ファイル → JsonException）<br>`NumberingRuleTests.UT_IT_080__LoadFromFile_ThrowsForEmptyLevels`（levels=[] → InvalidDataException）<br>`NumberingRuleTests.UT_IT_080__LoadFromFile_ThrowsForInvalidPrefixRegex`（不正 regex → RegexParseException ⊂ ArgumentException）<br>`NumberingRuleTests.UT_IT_080__LoadFromFile_ThrowsWhenFormatMissing`（format 未指定 → InvalidDataException） |
-| **理由** | JSON 構文エラー・空ファイル（JsonException）、levels=[]・format 欠損（InvalidDataException）、不正な prefixRegex（RegexParseException、ArgumentException のサブクラス）をそれぞれ確認。trace ログへの記録は `LoadFromFile` が全例外を catch してから re-throw する実装を確認（`Trace.WriteLine(ex.ToString())`）。実装は `NumberingRule.cs` の `LoadFromFile` + `Validate` + `BuildPrefixRegex` が存在。 |
+| **対応テスト** | `CliApplicationTests.UT_IT_080__Run_ReturnsErrorForBrokenRuleJson`（CLI apply + 壊れた JSON → exit 1）<br>`NumberingRuleTests.LoadFromFile_ThrowsForBrokenJson`（JSON 構文エラー → JsonException）<br>`NumberingRuleTests.UT_IT_080__LoadFromFile_ThrowsForEmptyFile`（空ファイル → JsonException）<br>`NumberingRuleTests.UT_IT_080__LoadFromFile_ThrowsForEmptyLevels`（levels=[] → InvalidDataException）<br>`NumberingRuleTests.UT_IT_080__LoadFromFile_ThrowsForInvalidPrefixRegex`（不正 regex → RegexParseException ⊂ ArgumentException）<br>`NumberingRuleTests.UT_IT_080__LoadFromFile_ThrowsWhenFormatMissing`（format 未指定 → InvalidDataException）<br>`NumberingRuleTests.UT_IT_080__LoadFromFile_AllowsExplicitEmptyFormat`（format:"" → 削除モードとして許可）<br>`NumberingRuleTests.UT_IT_080__LoadFromFile_ThrowsForWhitespaceOnlyFormat`（format が空白のみ → InvalidDataException）<br>`NumberingRuleTests.LoadFromFile_ThrowsWhenFormatIsWhitespaceOnly`（同上 TestCase 版）<br>`NumberingRuleTests.LoadFromFile_AllowsExplicitEmptyFormat`（同上 非UT 版） |
+| **理由** | CLI 経由の壊れた JSON に対する exit 1 を `UT_IT_080__Run_ReturnsErrorForBrokenRuleJson` で確認し、ルール読込単体では JSON 構文エラー・空ファイル（JsonException）、levels=[]・format 欠損・空白のみ format（InvalidDataException）、不正な prefixRegex（RegexParseException、ArgumentException のサブクラス）をそれぞれ確認した。**prefix 削除機能追加分**: `format:\"\"` は正常な削除指定として許可され（`UT_IT_080__LoadFromFile_AllowsExplicitEmptyFormat`）、`format: " "` や `format: "　"` は曖昧な設定として拒否される（`UT_IT_080__LoadFromFile_ThrowsForWhitespaceOnlyFormat`）ことを明示的に検証した。trace ログへの記録は `LoadFromFile` が全例外を catch してから re-throw する実装を確認（`Trace.WriteLine(ex.ToString())`）。実装は `NumberingRule.cs` の `LoadFromFile` + `Validate` + `BuildPrefixRegex` が存在。 |
 
 ---
 
@@ -132,13 +133,18 @@
 
 ### NotImplementedOrMismatch (0件)
 
-なし。全 ID について対応実装ファイルが `src/PptxHeadlineNumbering/` に存在することを確認。
+なし。全 ID について対応実装ファイルが `src/PptxHeadlineNumbering/` に存在することを確認。prefix 削除機能（`format:""`）も `NumberingRule.cs` / `PrefixReplacer.cs` / `ApplyCommand.cs` に本実装が存在し、テスト通過確認済み。
 
 ---
 
 ## スタブ・本物の実装確認
 
 本プロジェクトのすべての UnitTest は、モック・スタブ・InMemory 実装を使用せず、`src/PptxHeadlineNumbering/` の本物の実装クラス（`SlideWalker`, `InspectCommand`, `ApplyCommand`, `PrefixReplacer`, `HeadingCounter`, `NumberingRule`）を直接使用している。DI 配線も `CliApplication` コンストラクタ内でデフォルト具象クラスがインスタンス化されており、本番相当の経路から各責務に到達可能であることを確認済み。
+
+prefix 削除機能について、本物の実装は以下の場所に存在することを確認した：
+- `NumberingRule.cs` の `Validate()`: `format` の null/空文字/空白のみの 3 値判定
+- `PrefixReplacer.cs` の `Replace()`: `newPrefix.Length == 0` 分岐で prefix 除去のみ実行
+- `ApplyCommand.cs` の `Execute()`: `format.Length == 0 ? string.Empty : counter.Format(format)` の分岐
 
 ---
 
@@ -147,9 +153,9 @@
 | ファイル | 変更内容 |
 |---|---|
 | `tests/.../HeadingCounterTests.cs` | UT_IT_030 × 4 テスト追加 |
-| `tests/.../NumberingRuleTests.cs` | UT_IT_080 × 4 テスト追加 |
-| `tests/.../PrefixReplacerTests.cs` | UT_IT_040 × 2 テスト追加 |
+| `tests/.../NumberingRuleTests.cs` | UT_IT_080 × 4、`UT_IT_080__LoadFromFile_AllowsExplicitEmptyFormat`、`UT_IT_080__LoadFromFile_ThrowsForWhitespaceOnlyFormat` 追加（prefix 削除機能 format 検証） |
+| `tests/.../PrefixReplacerTests.cs` | UT_IT_040 × 5（`UT_IT_040__Replace_RemovesPrefixOnlyWhenNewPrefixIsEmpty` を含む）、prefix 削除向け非 UT テスト × 3 追加 |
 | `tests/.../InspectCommandTests.cs` | UT_IT_010 × 1 / UT_IT_060 × 1 テスト追加 |
 | `tests/.../SlideWalkerTests.cs` | UT_IT_090 × 2 テスト追加 |
-| `tests/.../ApplyCommandTests.cs` | UT_IT_020 × 2 / UT_IT_060 × 1 / UT_IT_090 × 1 / UT_IT_100 × 3 テスト追加 |
-| `tests/.../CliApplicationTests.cs` | UT_IT_070 × 2 / UT_IT_060 × 2 テスト追加 |
+| `tests/.../ApplyCommandTests.cs` | UT_IT_020 × 3 / UT_IT_050 × 1（`UT_IT_050__Execute_IsIdempotent_AfterPrefixRemoval`）/ UT_IT_060 × 1 / UT_IT_090 × 1 / UT_IT_100 × 3 と prefix 削除向け apply テスト × 3 追加 |
+| `tests/.../CliApplicationTests.cs` | UT_IT_070 × 2 / UT_IT_060 × 2 / UT_IT_080 × 1 テスト追加 |

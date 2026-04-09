@@ -98,10 +98,19 @@ public sealed class NumberingRule
                     string.Format(CultureInfo.InvariantCulture, "Duplicate level name: {0}", level.Name));
             }
 
-            if (string.IsNullOrWhiteSpace(level.Format))
+            if (level.Format is null)
             {
                 throw new InvalidDataException(
                     string.Format(CultureInfo.InvariantCulture, "format is required for level: {0}", level.Name));
+            }
+
+            if (level.Format.Length > 0 && string.IsNullOrWhiteSpace(level.Format))
+            {
+                throw new InvalidDataException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "format must be empty or non-whitespace for level: {0}",
+                        level.Name));
             }
 
             level.Validate();
@@ -163,7 +172,7 @@ public sealed class NumberingLevelRule
 
     public IReadOnlyList<NumberingMatchRule> Matches { get; init; } = Array.Empty<NumberingMatchRule>();
 
-    public string Format { get; init; } = string.Empty;
+    public string? Format { get; init; }
 
     public IReadOnlyList<string> ResetsOnNewLevel { get; init; } = Array.Empty<string>();
 

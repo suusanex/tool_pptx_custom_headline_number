@@ -150,4 +150,43 @@ public class CliApplicationTests
             Directory.Delete(tempDir, true);
         }
     }
+
+    [Test]
+    public void UT_IT_080__Run_ReturnsErrorForBrokenRuleJson()
+    {
+        // rule.json が壊れている場合、apply は終了コード 1 でエラー終了する（TP-080）
+        var tempDir = Path.Combine(TestContext.CurrentContext.WorkDirectory, Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        var inputPath = Path.Combine(tempDir, "input.pptx");
+        var outputPath = Path.Combine(tempDir, "output.pptx");
+        var rulePath = Path.Combine(tempDir, "broken.json");
+        File.WriteAllText(rulePath, "{");
+
+        PptxHeadlineNumbering.Tests.TestData.PptxTestDocumentFactory.Create(
+            inputPath,
+            new PptxHeadlineNumbering.Tests.TestData.TestSlide(
+                new PptxHeadlineNumbering.Tests.TestData.TestShape(
+                    "Title 1",
+                    DocumentFormat.OpenXml.Presentation.PlaceholderValues.Title,
+                    new PptxHeadlineNumbering.Tests.TestData.TestParagraph(0, "Intro"))));
+
+        var stdout = new StringWriter();
+        var stderr = new StringWriter();
+        var application = new CliApplication(stdout, stderr);
+
+        try
+        {
+            var exitCode = application.Run(["apply", inputPath, outputPath, "--rule", rulePath]);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(exitCode, Is.EqualTo(1));
+                Assert.That(stderr.ToString(), Is.Not.Empty);
+            });
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
 }

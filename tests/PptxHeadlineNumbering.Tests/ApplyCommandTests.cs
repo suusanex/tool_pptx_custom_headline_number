@@ -73,6 +73,262 @@ public class ApplyCommandTests
     }
 
     [Test]
+    public void Execute_RemovesPrefixWhenFormatIsEmpty()
+    {
+        const string ruleJsonForRemoval =
+            """
+            {
+              "prefixRegex":"^(?:\\d+(?:\\.\\d+)*[.)]?)(?:[\\s\\u3000]+)?",
+              "separator":" ",
+              "insertWhenPrefixMissing":true,
+              "levels":[
+                {"name":"H1","match":{"placeholderTypes":["title","ctrTitle"]},"format":"","resetsOnNewLevel":[]}
+              ]
+            }
+            """;
+
+        var tempDir = Path.Combine(TestContext.CurrentContext.WorkDirectory, Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        var inputPath = Path.Combine(tempDir, "input.pptx");
+        var outputPath = Path.Combine(tempDir, "output.pptx");
+        var rulePath = Path.Combine(tempDir, "rule.json");
+
+        PptxTestDocumentFactory.Create(
+            inputPath,
+            new TestSlide(
+                new TestShape("Title 1", DocumentFormat.OpenXml.Presentation.PlaceholderValues.Title,
+                    new TestParagraph(0, "1. Intro"))),
+            new TestSlide(
+                new TestShape("Title 2", DocumentFormat.OpenXml.Presentation.PlaceholderValues.Title,
+                    new TestParagraph(0, "2. Topic"))));
+        File.WriteAllText(rulePath, ruleJsonForRemoval);
+
+        try
+        {
+            new ApplyCommand(new SlideWalker(), new PrefixReplacer()).Execute(inputPath, outputPath, rulePath);
+
+            var texts = PptxTestDocumentFactory.ReadAllParagraphTexts(outputPath);
+            Assert.That(texts, Is.EqualTo(new[] { "Intro", "Topic" }));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public void UT_IT_020__Execute_RemovesPrefixFromCenteredTitleWhenFormatIsEmpty()
+    {
+        const string ruleJsonForRemoval =
+            """
+            {
+              "prefixRegex":"^(?:\\d+(?:\\.\\d+)*[.)]?)(?:[\\s\\u3000]+)?",
+              "separator":" ",
+              "insertWhenPrefixMissing":true,
+              "levels":[
+                {"name":"H1","match":{"placeholderTypes":["title","ctrTitle"]},"format":"","resetsOnNewLevel":[]}
+              ]
+            }
+            """;
+
+        var tempDir = Path.Combine(TestContext.CurrentContext.WorkDirectory, Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        var inputPath = Path.Combine(tempDir, "input.pptx");
+        var outputPath = Path.Combine(tempDir, "output.pptx");
+        var rulePath = Path.Combine(tempDir, "rule.json");
+
+        PptxTestDocumentFactory.Create(
+            inputPath,
+            new TestSlide(
+                new TestShape("Cover", DocumentFormat.OpenXml.Presentation.PlaceholderValues.CenteredTitle,
+                    new TestParagraph(0, "1. Cover"))));
+        File.WriteAllText(rulePath, ruleJsonForRemoval);
+
+        try
+        {
+            new ApplyCommand(new SlideWalker(), new PrefixReplacer()).Execute(inputPath, outputPath, rulePath);
+
+            var texts = PptxTestDocumentFactory.ReadAllParagraphTexts(outputPath);
+            Assert.That(texts, Is.EqualTo(new[] { "Cover" }));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public void Execute_PreservesHierarchyWhenDeletionAndNumberingAreMixed()
+    {
+        const string ruleJsonMixed =
+            """
+            {
+              "prefixRegex":"^(?:\\d+(?:\\.\\d+)*[.)]?)(?:[\\s\\u3000]+)?",
+              "separator":" ",
+              "insertWhenPrefixMissing":true,
+              "levels":[
+                {"name":"H1","match":{"placeholderTypes":["title","ctrTitle"]},"format":"","resetsOnNewLevel":[]},
+                {"name":"H2","match":{"placeholderTypes":["body","obj"],"paragraphLevel":0},"format":"{H1}.{H2}","resetsOnNewLevel":["H1"]}
+              ]
+            }
+            """;
+
+        var tempDir = Path.Combine(TestContext.CurrentContext.WorkDirectory, Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        var inputPath = Path.Combine(tempDir, "input.pptx");
+        var outputPath = Path.Combine(tempDir, "output.pptx");
+        var rulePath = Path.Combine(tempDir, "rule.json");
+
+        PptxTestDocumentFactory.Create(
+            inputPath,
+            new TestSlide(
+                new TestShape("Title 1", DocumentFormat.OpenXml.Presentation.PlaceholderValues.Title,
+                    new TestParagraph(0, "1. Intro")),
+                new TestShape("Body 1", DocumentFormat.OpenXml.Presentation.PlaceholderValues.Body,
+                    new TestParagraph(0, "Agenda"))),
+            new TestSlide(
+                new TestShape("Title 2", DocumentFormat.OpenXml.Presentation.PlaceholderValues.Title,
+                    new TestParagraph(0, "2. Topic")),
+                new TestShape("Body 2", DocumentFormat.OpenXml.Presentation.PlaceholderValues.Body,
+                    new TestParagraph(0, "Summary"))));
+        File.WriteAllText(rulePath, ruleJsonMixed);
+
+        try
+        {
+            new ApplyCommand(new SlideWalker(), new PrefixReplacer()).Execute(inputPath, outputPath, rulePath);
+
+            var texts = PptxTestDocumentFactory.ReadAllParagraphTexts(outputPath);
+            Assert.That(
+                texts,
+                Is.EqualTo(new[]
+                {
+                    "Intro",
+                    "1.1 Agenda",
+                    "Topic",
+                    "2.1 Summary",
+                }));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public void UT_IT_050__Execute_IsIdempotent_AfterPrefixRemoval()
+    {
+        // format:"" で prefix 削除後のファイルに再度同じルールを適用しても結果が変化しない（TP-050 冪等性、prefix 削除版）
+        const string ruleJsonForRemoval =
+            """
+            {
+              "prefixRegex":"^(?:\\d+(?:\\.\\d+)*[.)]?)(?:[\\s\\u3000]+)?",
+              "separator":" ",
+              "insertWhenPrefixMissing":true,
+              "levels":[
+                {"name":"H1","match":{"placeholderTypes":["title","ctrTitle"]},"format":"","resetsOnNewLevel":[]},
+                {"name":"H2","match":{"placeholderTypes":["body","obj"],"paragraphLevel":0},"format":"{H1}.{H2}","resetsOnNewLevel":["H1"]}
+              ]
+            }
+            """;
+
+        var tempDir = Path.Combine(TestContext.CurrentContext.WorkDirectory, Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        var inputPath = Path.Combine(tempDir, "input.pptx");
+        var output1Path = Path.Combine(tempDir, "output1.pptx");
+        var output2Path = Path.Combine(tempDir, "output2.pptx");
+        var rulePath = Path.Combine(tempDir, "rule.json");
+
+        PptxTestDocumentFactory.Create(
+            inputPath,
+            new TestSlide(
+                new TestShape("Title 1", DocumentFormat.OpenXml.Presentation.PlaceholderValues.Title,
+                    new TestParagraph(0, "1. Intro")),
+                new TestShape("Body 1", DocumentFormat.OpenXml.Presentation.PlaceholderValues.Body,
+                    new TestParagraph(0, "Background"))),
+            new TestSlide(
+                new TestShape("Title 2", DocumentFormat.OpenXml.Presentation.PlaceholderValues.Title,
+                    new TestParagraph(0, "2. Topic")),
+                new TestShape("Body 2", DocumentFormat.OpenXml.Presentation.PlaceholderValues.Body,
+                    new TestParagraph(0, "Summary"))));
+        File.WriteAllText(rulePath, ruleJsonForRemoval);
+
+        try
+        {
+            var command = new ApplyCommand(new SlideWalker(), new PrefixReplacer());
+            command.Execute(inputPath, output1Path, rulePath);
+            command.Execute(output1Path, output2Path, rulePath);
+
+            var output1Texts = PptxTestDocumentFactory.ReadAllParagraphTexts(output1Path);
+            var output2Texts = PptxTestDocumentFactory.ReadAllParagraphTexts(output2Path);
+
+            // H1 は prefix 削除、H2 は H1 カウンタを維持して採番される
+            Assert.Multiple(() =>
+            {
+                Assert.That(
+                    output1Texts,
+                    Is.EqualTo(new[] { "Intro", "1.1 Background", "Topic", "2.1 Summary" }));
+                Assert.That(output2Texts, Is.EqualTo(output1Texts)); // 2 回目適用後も同一
+            });
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
+    public void Execute_IsIdempotent_WhenFormatIsEmpty()
+    {
+        const string ruleJsonForRemoval =
+            """
+            {
+              "prefixRegex":"^(?:\\d+(?:\\.\\d+)*[.)]?)(?:[\\s\\u3000]+)?",
+              "separator":" ",
+              "insertWhenPrefixMissing":true,
+              "levels":[
+                {"name":"H1","match":{"placeholderTypes":["title","ctrTitle"]},"format":"","resetsOnNewLevel":[]}
+              ]
+            }
+            """;
+
+        var tempDir = Path.Combine(TestContext.CurrentContext.WorkDirectory, Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        var inputPath = Path.Combine(tempDir, "input.pptx");
+        var output1Path = Path.Combine(tempDir, "output1.pptx");
+        var output2Path = Path.Combine(tempDir, "output2.pptx");
+        var rulePath = Path.Combine(tempDir, "rule.json");
+
+        PptxTestDocumentFactory.Create(
+            inputPath,
+            new TestSlide(
+                new TestShape("Title 1", DocumentFormat.OpenXml.Presentation.PlaceholderValues.Title,
+                    new TestParagraph(0, "1. Intro")),
+                new TestShape("Title 2", DocumentFormat.OpenXml.Presentation.PlaceholderValues.Title,
+                    new TestParagraph(0, "Topic"))));
+        File.WriteAllText(rulePath, ruleJsonForRemoval);
+
+        try
+        {
+            var command = new ApplyCommand(new SlideWalker(), new PrefixReplacer());
+            command.Execute(inputPath, output1Path, rulePath);
+            command.Execute(output1Path, output2Path, rulePath);
+
+            var output1Texts = PptxTestDocumentFactory.ReadAllParagraphTexts(output1Path);
+            var output2Texts = PptxTestDocumentFactory.ReadAllParagraphTexts(output2Path);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(output1Texts, Is.EqualTo(new[] { "Intro", "Topic" }));
+                Assert.That(output2Texts, Is.EqualTo(output1Texts));
+            });
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Test]
     public void Execute_ThrowsWhenInputAndOutputAreSame_AndWritesTrace()
     {
         var tempDir = Path.Combine(TestContext.CurrentContext.WorkDirectory, Guid.NewGuid().ToString("N"));
